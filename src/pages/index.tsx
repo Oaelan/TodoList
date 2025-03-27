@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   TodoList,
   NewTodoItem,
@@ -22,6 +22,8 @@ export default function Home() {
     queryKey: ["getTodoList"],
     queryFn: getTodoList,
   });
+  //추가 버튼 클릭시 디바운싱 설정
+  const debouncedAddClickRef = useRef<NodeJS.Timeout | null>(null);
 
   //완료 체크하기 이벤트
   const handleCheckTodo = async (todoItem: TodoItem) => {
@@ -42,16 +44,29 @@ export default function Home() {
   };
 
   //추가 버튼 클릭시 일정 등록 이벤트
-  const handleAddClick = async () => {
-    const newTodo: NewTodoItem = {
-      name: addValue,
-    };
-    //서버에 투두리스트 추가
-    const afterAddTodo = await addTodoList(newTodo);
-    //투두리스트 리스트에 newTodo 추가
-    setTodoList([...todoList, afterAddTodo]);
-    //인풋창 초기화
-    setAddValue("");
+  const handleAddClick = () => {
+    //추가 이벤트시에 여러번 클릭시 데이터 중복 추가 방지를 위한 디바운싱 설정
+    // 이전 타이머가 있으면 취소
+    if (debouncedAddClickRef.current) {
+      clearTimeout(debouncedAddClickRef.current);
+    }
+    // 타이머 설정
+    debouncedAddClickRef.current = setTimeout(async () => {
+      //인풋창에 값이 없을때 경고 메시지 보여주기
+      if (addValue.trim() === "") {
+        alert("할 일을 입력해주세요.");
+        return;
+      }
+      const newTodo: NewTodoItem = {
+        name: addValue,
+      };
+      //서버에 투두리스트 추가
+      const afterAddTodo = await addTodoList(newTodo);
+      //투두리스트 리스트에 newTodo 추가
+      setTodoList([...todoList, afterAddTodo]);
+      //인풋창 초기화
+      setAddValue("");
+    }, 500);
   };
   //인풋창에 값 입력시 addValue 업데이트
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,6 +171,7 @@ export default function Home() {
             todoList.filter((todo) => !todo.isCompleted).length > 0 ? (
               todoList
                 .filter((todo) => !todo.isCompleted)
+                .sort((a, b) => a.id - b.id)
                 .map((todo) => (
                   <CheckTodoList
                     key={todo.id}
@@ -206,6 +222,7 @@ export default function Home() {
             todoList.filter((todo) => todo.isCompleted).length > 0 ? (
               todoList
                 .filter((todo) => todo.isCompleted)
+                .sort((a, b) => a.id - b.id)
                 .map((todo) => (
                   <CheckTodoList
                     key={todo.id}

@@ -22,13 +22,16 @@ function CheckTodoList({
 
   return (
     <div
-      className={`p-2 flex items-center ${
-        invalidateQueryKey === "detail"
-          ? "rounded-2xl justify-center"
-          : "rounded-full"
-      } ${
-        todoItem.isCompleted ? "bg-add-100 line-through" : "bg-white"
-      } border-default-900 border-2 nanum-regular-16`}
+      className={`p-2 flex items-center border-default-900 border-2
+        ${
+          // 상세 페이지일때 스타일링 / 아닐 때 스타일링
+          invalidateQueryKey === "detail"
+            ? "rounded-2xl justify-center"
+            : "rounded-full"
+        } ${
+        // 완료  후/ 전 배경색 스타일링
+        todoItem.isCompleted ? "bg-add-100" : "bg-white"
+      }`}
     >
       <Image
         src={
@@ -45,7 +48,13 @@ function CheckTodoList({
       />
       <div
         className={`cursor-pointer ${
-          invalidateQueryKey === "detail" ? "w-fit" : "w-full"
+          invalidateQueryKey === "detail"
+            ? "w-fit nanum-bold-16 underline"
+            : "w-full nanum-regular-14"
+        } ${
+          invalidateQueryKey === "index" &&
+          todoItem.isCompleted &&
+          "line-through"
         }`}
         onClick={() => handleDetailTodoClick(todoItem)}
       >
