@@ -1,11 +1,16 @@
 import Image from "next/image";
 import { useState } from "react";
-import { TodoList, TodoItem, NewTodoItem } from "../TodoListType";
+import {
+  TodoList,
+  NewTodoItem,
+  TodoItem,
+  UpdateTodoDto,
+} from "../TodoListType";
 import CheckTodoList from "../components/CheckTodoList";
-import { getTodoList, addTodoList } from "@/api/todoApi";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { getTodoList, addTodoList, updateTodo } from "@/api/todoApi";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+
 //메인 페이지
 export default function Home() {
   //투두리스트들을 담을 배열 (메인 페이지에서 보여줄 state)
@@ -17,35 +22,41 @@ export default function Home() {
     queryKey: ["getTodoList"],
     queryFn: getTodoList,
   });
-  const queryClient = useQueryClient();
 
-  //마운트 후에 할일이 추가가 될때마다 getTodoList 쿼리 리프레쉬 하기 위함
-  const mutation = useMutation({
-    mutationFn: addTodoList,
-    onSuccess: () => {
-      // 추가된 할일의 정보를 가져오기 위해 쿼리 리프레시
-      queryClient.invalidateQueries({ queryKey: ["getTodoList"] });
-    },
-  });
+  //완료 체크하기 이벤트
+  const handleCheckTodo = async (todoItem: TodoItem) => {
+    const updatedTodoItem: UpdateTodoDto = {
+      name: todoItem.name,
+      isCompleted: !todoItem.isCompleted, // completed 속성만 반전
+      imageUrl: todoItem.imageUrl ? todoItem.imageUrl : "",
+      memo: todoItem.memo ? todoItem.memo : "",
+    };
+    //업데이트할 투두값
+    const updatedTodo = await updateTodo(todoItem.id, updatedTodoItem);
+    //업데이트된 투두값을 투두리스트에 적용
+    const updatedTodoList = (todoList || []).map((todo: TodoItem) =>
+      todo.id === updatedTodo.id ? updatedTodo : todo
+    );
+    console.log("updatedTodoList", updatedTodoList);
+    setTodoList(updatedTodoList);
+  };
 
   //추가 버튼 클릭시 일정 등록 이벤트
-  const handleAddClick = () => {
+  const handleAddClick = async () => {
     const newTodo: NewTodoItem = {
       name: addValue,
     };
-    mutation.mutate(newTodo);
+    //서버에 투두리스트 추가
+    const afterAddTodo = await addTodoList(newTodo);
+    //투두리스트 리스트에 newTodo 추가
+    setTodoList([...todoList, afterAddTodo]);
+    //인풋창 초기화
     setAddValue("");
   };
   //인풋창에 값 입력시 addValue 업데이트
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddValue(e.target.value);
   };
-  // 부모 컴포넌트에서의 상태 업데이트 함수
-  // const onToggleComplete = (updatedTodo: TodoItem) => {
-  //   setTodoList((prevList) =>
-  //     prevList.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
-  //   );
-  // };
 
   useEffect(() => {
     if (data) {
@@ -123,7 +134,13 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-2 w-full gap-4 mt-10">
         <div className="ToDo flex flex-col py-6 gap-5 md:px-4 sm:px-0">
           <div className="">
-            <Image src="/img/todo@3x.png" alt="todo" width={120} height={120} />
+            <Image
+              src="/img/todo@3x.png"
+              alt="todo"
+              width={120}
+              height={120}
+              className="w-auto h-auto object-contain"
+            />
           </div>
 
           <div
@@ -143,7 +160,8 @@ export default function Home() {
                   <CheckTodoList
                     key={todo.id}
                     todoItem={todo}
-                    invalidateQueryKey="getTodoList"
+                    invalidateQueryKey="index"
+                    handleCheckTodo={handleCheckTodo}
                   />
                 ))
             ) : (
@@ -152,7 +170,8 @@ export default function Home() {
                 alt="todoSize"
                 width={180}
                 height={180}
-                className="object-contain"
+                className="w-auto h-auto object-contain"
+                priority
               />
             )}
           </div>
@@ -167,13 +186,19 @@ export default function Home() {
 
         <div className="Done flex flex-col py-6 gap-5 md:px-4 sm:px-0">
           <div className="">
-            <Image src="/img/done@3x.png" alt="done" width={120} height={120} />
+            <Image
+              src="/img/done@3x.png"
+              alt="done"
+              width={120}
+              height={120}
+              className="w-auto h-auto object-contain"
+            />
           </div>
           <div
             className={`mb-4 flex ${
               todoList.length > 0 &&
               todoList.filter((todo) => todo.isCompleted).length > 0
-                ? "flex-col gap-3"
+                ? "flex-col gap-3 min-h-[300px]"
                 : "justify-center h-[300px]"
             }`}
           >
@@ -181,14 +206,22 @@ export default function Home() {
             todoList.filter((todo) => todo.isCompleted).length > 0 ? (
               todoList
                 .filter((todo) => todo.isCompleted)
-                .map((todo) => <CheckTodoList key={todo.id} todoItem={todo} />)
+                .map((todo) => (
+                  <CheckTodoList
+                    key={todo.id}
+                    todoItem={todo}
+                    invalidateQueryKey="index"
+                    handleCheckTodo={handleCheckTodo}
+                  />
+                ))
             ) : (
               <Image
                 src="/img/Type=DoneSize=Large@3x.png"
                 alt="doneSize"
                 width={180}
                 height={180}
-                className="object-contain"
+                className="w-auto h-auto object-contain"
+                priority
               />
             )}
           </div>
