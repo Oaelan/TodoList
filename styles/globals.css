@@ -1,6 +1,7 @@
-@import "tailwindcss";
 /* 나눔폰트 추가 */
 @import url("https://cdn.jsdelivr.net/npm/typeface-nanum-square@latest/index.css");
+@import "tailwindcss";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -18,8 +19,6 @@
   --delete-600: #dc2626;
   --modify-300: #84cc16;
   --post-title: #92400e;
-  /* 나눔 폰트 */
-  --font-nanum-square: ;
 }
 
 @theme inline {
@@ -37,9 +36,7 @@
   --color-default-500: var(--default-500);
   --color-default-800: var(--default-800);
   --color-default-900: var(--default-900);
-  --font-sans: var(--font-nanum-square);
-  --font-mono: var(--font-nanum-square);
-  --font-nanum-square: "NanumSquare", sans-serif;
+  --font-nanum-square: "NanumSquare";
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,14 +54,12 @@ body {
 
 /* 폰트 스타일링 설정 */
 @layer components {
-  .nanum-bold-20 {
+  .nanum-regular-20 {
     font-family: var(--font-nanum-square);
-    font-weight: bold;
     font-size: 20px;
   }
-  .nanum-bold-18 {
+  .nanum-regular-18 {
     font-family: var(--font-nanum-square);
-    font-weight: bold;
     font-size: 18px;
   }
   .nanum-bold-16 {
@@ -74,12 +69,15 @@ body {
   }
   .nanum-regular-16 {
     font-family: var(--font-nanum-square);
-    font-weight: 400;
+    font-size: 16px;
+  }
+  .nanum-bold-16 {
+    font-family: var(--font-nanum-square);
+    font-weight: 600;
     font-size: 16px;
   }
   .nanum-regular-14 {
     font-family: var(--font-nanum-square);
-    font-weight: 400;
     font-size: 14px;
   }
 }

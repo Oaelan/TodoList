@@ -11,8 +11,6 @@ export type TodoItem = {
   memo?: string;
   imageUrl?: string;
   isCompleted: boolean;
-  isEditing?: boolean; // 프론트엔드에서만 사용 (선택적 속성)
-  isSelected?: boolean; // 프론트엔드에서만 사용 (선택적 속성)
 };
 
 export type NewTodoItem = {
@@ -22,6 +20,6 @@ export type NewTodoItem = {
 export type UpdateTodoDto = {
   name: string;
   memo: string;
-  imageUrl: string;
+  imageUrl: File | string;
   isCompleted: boolean;
 };
