@@ -1,8 +1,8 @@
 import { useRouter } from "next/router";
 import Image from "next/image";
-import { getTodo } from "@/api/todoApi";
+import { getTodo, updateTodo } from "@/api/todoApi";
 import { useQuery } from "@tanstack/react-query";
-import { TodoItem } from "@/TodoListType";
+import { TodoItem, UpdateTodoDto } from "@/TodoListType";
 import { useEffect, useState } from "react";
 import CheckTodoList from "@/components/CheckTodoList";
 export default function Detail() {
@@ -21,7 +21,18 @@ export default function Detail() {
     imageUrl: "",
     isCompleted: false,
   });
-
+  const handleCheckTodo = async () => {
+    const updatedTodoItem: UpdateTodoDto = {
+      name: todo.name,
+      isCompleted: !todo.isCompleted, // completed 속성만 반전
+      imageUrl: todo.imageUrl ? todo.imageUrl : "",
+      memo: todo.memo ? todo.memo : "",
+    };
+    //업데이트할 투두값
+    const updatedTodo = await updateTodo(Number(id), updatedTodoItem);
+    //업데이트된 투두값을 투두리스트에 적용
+    setTodo(updatedTodo);
+  };
   useEffect(() => {
     if (data) {
       setTodo(data);
@@ -40,7 +51,11 @@ export default function Detail() {
   return (
     <div className="Detail h-screen bg-white mx-0 lg:mx-[20%] lg:px-20  px-5 pt-5 flex flex-col gap-5">
       {/* 투두리스트 이름 영역 */}
-      <CheckTodoList todoItem={todo} invalidateQueryKey="getTodo" />
+      <CheckTodoList
+        todoItem={todo}
+        invalidateQueryKey="detail"
+        handleCheckTodo={handleCheckTodo}
+      />
       {/* 이미지 업로드 & 메모 영역 */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-3">
         {/* 이미지 업로드 영역 */}

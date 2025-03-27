@@ -13,8 +13,9 @@ export const getTodoList = async (): Promise<TodoList> => {
 };
 
 //투두리스트 데이터 추가
-export const addTodoList = async (newTodo: NewTodoItem): Promise<void> => {
-  await axios.post(`${API_URL}`, newTodo);
+export const addTodoList = async (newTodo: NewTodoItem): Promise<TodoItem> => {
+  const response = await axios.post(`${API_URL}`, newTodo);
+  return response.data; // 서버에서 생성된 TodoItem 전체 반환
 };
 
 //투두 데이터 요청
@@ -28,6 +29,7 @@ export const getTodo = async (id: number): Promise<TodoItem> => {
 export const updateTodo = async (
   id: number,
   updatedTodo: UpdateTodoDto
-): Promise<void> => {
-  await axios.patch(`${API_URL}/${id}`, updatedTodo);
+): Promise<TodoItem> => {
+  const response = await axios.patch(`${API_URL}/${id}`, updatedTodo);
+  return response.data; // 서버에서 업데이트된 TodoItem 전체 반환
 };
