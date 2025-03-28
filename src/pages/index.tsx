@@ -19,6 +19,7 @@ export default function Home() {
   const [addValue, setAddValue] = useState("");
   //서버에 API 요청으로 투두리스트 가져오기
   const { data, isLoading, error } = useQuery({
+    //메인 페이지에서 투두리스트 가져오는 요청은 타입은
     queryKey: ["getTodoList"],
     queryFn: getTodoList,
   });
@@ -26,20 +27,16 @@ export default function Home() {
   const debouncedAddClickRef = useRef<NodeJS.Timeout | null>(null);
 
   //완료 체크하기 이벤트
-  const handleCheckTodo = async (todoItem: TodoItem) => {
+  const handleCheckTodo = async (todo: TodoItem) => {
     const updatedTodoItem: UpdateTodoDto = {
-      name: todoItem.name,
-      isCompleted: !todoItem.isCompleted, // completed 속성만 반전
-      imageUrl: todoItem.imageUrl ? todoItem.imageUrl : "",
-      memo: todoItem.memo ? todoItem.memo : "",
+      isCompleted: !todo.isCompleted, // completed 속성만 반전
     };
     //업데이트할 투두값
-    const updatedTodo = await updateTodo(todoItem.id, updatedTodoItem);
+    const updatedTodo = await updateTodo(todo.id, updatedTodoItem);
     //업데이트된 투두값을 투두리스트에 적용
     const updatedTodoList = (todoList || []).map((todo: TodoItem) =>
       todo.id === updatedTodo.id ? updatedTodo : todo
     );
-    console.log("updatedTodoList", updatedTodoList);
     setTodoList(updatedTodoList);
   };
 
