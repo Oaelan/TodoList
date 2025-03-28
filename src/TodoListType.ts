@@ -18,8 +18,8 @@ export type NewTodoItem = {
 };
 
 export type UpdateTodoDto = {
-  name: string;
-  memo: string;
-  imageUrl: File | string;
-  isCompleted: boolean;
+  name?: string;
+  memo?: string;
+  imageUrl?: File | string;
+  isCompleted?: boolean;
 };

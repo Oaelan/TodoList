@@ -21,6 +21,8 @@ export default function Detail() {
   const [memo, setMemo] = useState<string>("");
   //파일 업로드 참조 요소
   const fileInputRef = useRef<HTMLInputElement>(null);
+  //파일 업로드 이미지 파일
+  const fileImgRef = useRef<File>(null);
   //삭제 버튼 디바운싱
   const deleteDebounceRef = useRef<NodeJS.Timeout | null>(null);
   //수정 버튼 디바운싱
@@ -37,6 +39,7 @@ export default function Detail() {
   });
   //투두 완료 전/후 상태 체크
   const handleCheckTodo = async () => {
+    console.log("todo", todo);
     const updatedTodoItem: UpdateTodoDto = {
       name: todo.name,
       isCompleted: !todo.isCompleted, // completed 속성만 반전
@@ -55,7 +58,7 @@ export default function Detail() {
     }
     //0.5초 디바운싱
     deleteDebounceRef.current = setTimeout(async () => {
-      const deletedTodo = await deleteTodo(Number(id));
+      await deleteTodo(Number(id));
       router.push("/");
     }, 500);
   };
@@ -71,37 +74,60 @@ export default function Detail() {
   ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      setUploadedImage(files[0]); // 첫 번째 파일을 상태에 저장
-      const imgUrl = await uploadImages(files[0]);
-      console.log("imgUrl", imgUrl);
-      setUploadedImage(imgUrl);
+      const file = files[0];
+
+      // 파일 크기 체크 (5MB 이하)
+      console.log("file.size", file.size, 5 * 1024 * 1024);
+      if (file.size > 5 * 1024 * 1024) {
+        alert("파일 크기는 5MB 이하이어야 합니다.");
+        return;
+      }
+      // 파일명 체크 (영어로만)
+      const fileNamePattern = /^[a-zA-Z0-9_.-]+$/; // 영어, 숫자, _, -, . 만 허용
+      if (!fileNamePattern.test(file.name)) {
+        alert("파일명은 영어로만 작성해야 합니다.");
+        return;
+      }
+      // 첫 번째 파일을 상태에 저장 이미지 파일 선택 후 미리보기를 하기 위함!
+      setUploadedImage(file);
+      fileImgRef.current = file;
     }
   };
   //투두 수정  버튼
-  // const handleEditTodoClick = async () => {
-  //   const updatedTodoItem: UpdateTodoDto = {
-  //     name: todo.name,
-  //     isCompleted: todo.isCompleted,
-  //     imageUrl: uploadedImage ? uploadedImage : "",
-  //     memo: memo,
-  //   };
-  //   const updatedTodo = await updateTodo(Number(id), updatedTodoItem);
-  //   setTodo(updatedTodo);
-  // };
+  const handleEditTodoClick = async () => {
+    //수정버튼 디바운싱
+    if (updateDebounceRef.current) {
+      clearTimeout(updateDebounceRef.current);
+    }
+    updateDebounceRef.current = setTimeout(async () => {
+      let imgUrl = "";
+      //수정시 업로드한 이미지 파일이 있을경우 url 반환
+      if (fileImgRef.current) {
+        imgUrl = await uploadImages(fileImgRef.current);
+        console.log("imgUrl", imgUrl);
+        setUploadedImage(imgUrl);
+      }
+      //수정시 업로드한 이미지 파일이 없을경우 기존 이미지 사용
+      const updateTodoItem: UpdateTodoDto = {
+        name: todo.name,
+        isCompleted: todo.isCompleted,
+        imageUrl: imgUrl ? imgUrl : todo.imageUrl,
+        memo: memo,
+      };
+      await updateTodo(Number(id), updateTodoItem);
+      router.push("/");
+    }, 500);
+  };
 
   useEffect(() => {
     if (data) {
+      //상세 페이지에대한 투두 값 상태값 설정
       setTodo(data);
       setMemo(data.memo || "");
       setUploadedImage(data.imageUrl || "");
     }
   }, [data]);
 
-  useEffect(() => {
-    if (uploadedImage) {
-      console.log("uploadedImage", uploadedImage);
-    }
-  }, [uploadedImage]);
   // 로딩 중일 때
   if (isLoading) {
     return <div>Loading...</div>;
@@ -123,14 +149,20 @@ export default function Detail() {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-3">
         {/* 이미지 업로드 영역 */}
         <div
-          className="col-span-1 lg:col-span-4 imgUpload h-[300px] bg-default-100
-        border-dashed border-[1.5px] border-default-300 rounded-4xl flex flex-col items-center justify-center relative"
+          className={`col-span-1 lg:col-span-4 imgUpload h-[300px] bg-default-100
+  ${uploadedImage ? "" : "border-dashed border-[1.5px]"} 
+        border-default-300 rounded-4xl flex flex-col
+        items-center justify-center relative`}
         >
           {/* 이미지 업로드 아이콘 또는 업로드한 이미지 표시 */}
           <div className="w-full h-full flex items-center justify-center">
             {uploadedImage ? (
               <Image
-                src={URL.createObjectURL(uploadedImage)} // 업로드한 이미지 미리보기
+                src={
+                  typeof uploadedImage === "string"
+                    ? uploadedImage
+                    : URL.createObjectURL(uploadedImage)
+                }
                 alt="Uploaded Image"
                 width={60}
                 height={60}
@@ -143,20 +175,40 @@ export default function Detail() {
                 width={60}
                 height={60}
                 className="mb-4"
-                onClick={handleFileUploadClick} // 클릭 시 파일 선택 대화상자 열기
+                onClick={handleFileUploadClick} // 클릭 시 파일 입력 트리거
               />
             )}
           </div>
-          {/* 업로드 버튼 */}
-          <button className="absolute bottom-4 right-4 cursor-pointer bg-default-200 hover:bg-default-300 p-3 rounded-full">
-            <Image
-              src="/ic/Variant2@3x.png"
-              alt="upload"
-              width={15}
-              height={15}
-              onClick={handleFileUploadClick} // 버튼 클릭 시 파일 입력 트리거
-            />
-          </button>
+          {uploadedImage ? (
+            //파일 수정 버튼
+            <button
+              className="absolute bottom-4 right-4 cursor-pointer
+            bg-default-800/60 hover:bg-default-500/60
+            p-4 rounded-full border-2 border-default-900"
+            >
+              <Image
+                src="/ic/edit@3x.png"
+                alt="edit"
+                width={20}
+                height={20}
+                onClick={handleFileUploadClick} // 버튼 클릭 시 파일 입력 트리거
+              />
+            </button>
+          ) : (
+            //업로드 버튼
+            <button
+              className="absolute bottom-4 right-4 cursor-pointer
+            bg-default-200 hover:bg-default-300 p-4 rounded-full"
+            >
+              <Image
+                src="/ic/Variant2@3x.png"
+                alt="upload"
+                width={20}
+                height={20}
+                onClick={handleFileUploadClick} // 버튼 클릭 시 파일 입력 트리거
+              />
+            </button>
+          )}
           {/* 파일 입력 요소 (숨김) */}
           <input
             className="hidden"
@@ -174,7 +226,7 @@ export default function Detail() {
           <h1 className="text-post-title nanum-bold-16">Memo</h1>
           {/* 메모 입력 영역 */}
           <textarea
-            className="mt-20 text-center w-full h-full resize-none outline-none bg-transparent"
+            className="mt-5 text-center w-full h-full resize-none outline-none bg-transparent"
             placeholder="메모를 입력하세요"
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
@@ -183,7 +235,12 @@ export default function Detail() {
       </div>
       {/* 버튼 영역 */}
       <div className="flex gap-3 justify-center lg:justify-end">
-        <button className="cursor-pointer button-shadow bg-default-200 rounded-full px-7 py-2 flex items-center justify-center">
+        <button
+          onClick={handleEditTodoClick}
+          className={`cursor-pointer button-shadow
+          ${uploadedImage ? "bg-modify-300" : "bg-default-200"} rounded-full
+          px-7 py-2 flex items-center justify-center`}
+        >
           <Image
             src="/ic/check@3x.png"
             alt="edit"
